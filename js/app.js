@@ -411,9 +411,10 @@ function renderPadBody() {
 
   // 큰 카드 4개
   const gradeClass = `grade-${proj.grade}`;
-  let bc2 = dl.alreadyOk ? '-' : fmt(dl.speed, 1);
-  let bc3 = dl.alreadyOk ? '-' : fmt(dl.dailyFuel, 1);
-  let bc4 = dl.alreadyOk ? '-' : fmt(dl.extraSeaDays, 1);
+  const noRec = dl.alreadyOk || !dl.feasible;   // 감속 불필요 또는 권장값을 낼 수 없음
+  let bc2 = noRec ? '-' : fmt(dl.speed, 1);
+  let bc3 = noRec ? '-' : fmt(dl.dailyFuel, 1);
+  let bc4 = noRec ? '-' : fmt(dl.extraSeaDays, 1);
 
   const bigCards = `<div class="big-cards">
     <div class="big-card grade-card">
@@ -438,10 +439,22 @@ function renderPadBody() {
     </div>
   </div>`;
 
+  // 확인되지 않은 의심 값이 있으면 경고 (검증 실패 대응)
+  const pending = CIIEngine.validate(shipData.get(tab3Ship).records).issues.filter(i => !tab3Date || i.date <= tab3Date);
+  const pendingHTML = pending.length
+    ? `<div class="pad-message" style="border-left-color:#d97706;background:#fff7ed">⚠ 확인되지 않은 의심 값 ${pending.length}건이 있습니다(② 표준화·검증). 확인 전 결과는 달라질 수 있습니다.</div>`
+    : '';
+
   // 메시지
   let message;
   if (dl.alreadyOk) {
     message = `<div class="pad-message ok">현재 속력을 유지해도 연말 C등급 이상입니다.</div>`;
+  } else if (!dl.feasible) {
+    message = `<div class="pad-message">
+      연말 예상 등급 <strong>${proj.grade}</strong> (CII ${fmtCII(proj.cii)}).
+      남은 기간에 6노트 이상의 속력으로는 C등급을 맞추기 어려워 권장 속력을 제시하지 않습니다.
+      운항 계획을 운항팀과 다시 검토하세요.
+    </div>`;
   } else {
     const cdBound = CIIEngine.boundaries(ctx.dwt, ctx.year)[2];
     const diffPct = ((proj.cii - cdBound) / cdBound * 100).toFixed(1);
@@ -474,7 +487,7 @@ function renderPadBody() {
     </div>`;
   }
 
-  body.innerHTML = bigCards + message + earlyHTML;
+  body.innerHTML = pendingHTML + bigCards + message + earlyHTML;
 }
 
 /* ================================================================
