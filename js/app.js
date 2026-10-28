@@ -457,7 +457,8 @@ function renderPadBody() {
   const earlyDate = `${ctx.year}-06-30`;
   const cEarly = computeCtx(tab3Ship, earlyDate);
   let earlyHTML = '';
-  if (cEarly && cEarly.s.elapsedDays > 0) {
+  // 기준일이 7월 1일 이후이고, 6/30까지의 데이터가 있을 때만 비교를 보여준다
+  if (cEarly && cEarly.s.elapsedDays > 0 && s.lastDate > earlyDate && CIIEngine.dailyLimit(cEarly.s, ctx, 'C').feasible) {
     const dlEarly = CIIEngine.dailyLimit(cEarly.s, ctx, 'C');
     earlyHTML = `<div class="early-compare">
       <h4>📌 7월 1일에 알았다면 (기준일: ${earlyDate})</h4>

@@ -11,7 +11,9 @@
     { std: 'distance', re: /dist|거리/i },
     { std: 'speed', re: /speed|spd|속력|속도/i },
   ];
-  const FUEL_RE = /(\bME\b|\bAE\b|\bGE\b|boiler|FOC|\bFO\b|HFO|MGO|MDO|LFO|주기관|발전기|보일러|중유|경유|연료)/i;
+  const FUEL_RE = /(\bME\b|\bAE\b|\bGE\b|boiler|FOC|\bFO\b|F\.O|HFO|MGO|MDO|LFO|VLSFO|ULSFO|fuel|consumption|\bcons\b|주기관|발전기|보일러|중유|경유|연료|소모|소비)/i;
+  // 남은 연료량(ROB)·급유량·가격 등은 소비량이 아니므로 제외
+  const NOT_CONSUMPTION_RE = /(ROB|remain|on ?board|bunker|supplied|price|cost|잔량|재고|수급|급유|단가|가격)/i;
   function fuelType(h) {
     if (/MGO|MDO|경유|DMA|gas ?oil/i.test(h)) return 'MGO';
     if (/LFO/i.test(h)) return 'LFO';
@@ -23,7 +25,7 @@
       const name = String(h ?? '').trim(); if (!name) return;
       const rule = RULES.find(r => r.re.test(name) && !map.some(m => m.std === r.std));
       if (rule) map.push({ col: i, original: name, std: rule.std });
-      else if (FUEL_RE.test(name)) map.push({ col: i, original: name, std: 'fuel', fuelType: fuelType(name) });
+      else if (FUEL_RE.test(name) && !NOT_CONSUMPTION_RE.test(name)) map.push({ col: i, original: name, std: 'fuel', fuelType: fuelType(name) });
       else map.push({ col: i, original: name, std: null });
     });
     return map;
@@ -33,8 +35,15 @@
       const d = new Date(Math.round(v - 25569) * 86400000); return d.toISOString().slice(0, 10);
     }
     if (v instanceof Date) { const d = new Date(v.getTime() + 12 * 3600000); return d.toISOString().slice(0, 10); }
-    const m = String(v ?? '').trim().match(/^(\d{4})[.\-/](\d{1,2})[.\-/](\d{1,2})/);
-    return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : null;
+    const t = String(v ?? '').trim();
+    const pad = x => String(x).padStart(2, '0');
+    let m = t.match(/^(\d{4})\s*[.\-/년]\s*(\d{1,2})\s*[.\-/월]\s*(\d{1,2})/);   // 2026-01-15, 2026.1.15, 2026년 1월 15일
+    if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+    m = t.match(/^(\d{4})(\d{2})(\d{2})$/);                                         // 20260115
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    m = t.match(/^(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})/);                          // 1/15/2026 (월/일), 15/01/2026 (일/월)
+    if (m) { let a = +m[1], b = +m[2]; const [mo, d] = a > 12 ? [b, a] : [a, b]; return `${m[3]}-${pad(mo)}-${pad(d)}`; }
+    return null;
   }
   function readInfo(rows) {
     const info = {};
@@ -48,7 +57,18 @@
     return info;
   }
   /* aoa: 첫 시트를 2차원 배열로 (첫 행 = 헤더). infoAoa: 선박정보 시트(없으면 null) */
+  // 맨 위 제목 줄이 있어도 되도록, 첫 15행 중 날짜·거리·연료 열이 2개 이상 보이는 행을 헤더로 쓴다
+  function findHeaderRow(aoa) {
+    for (let i = 0; i < Math.min(aoa.length, 15); i++) {
+      const m = mapHeaders(aoa[i] || []);
+      const hits = ['date', 'distance', 'fuel'].filter(k => m.some(x => x.std === k)).length;
+      if (hits >= 2) return i;
+    }
+    return 0;
+  }
   function standardize(aoa, infoAoa) {
+    const h = findHeaderRow(aoa);
+    aoa = aoa.slice(h);
     const map = mapHeaders(aoa[0]);
     const get = std => map.find(m => m.std === std);
     const fuels = map.filter(m => m.std === 'fuel');
@@ -58,7 +78,10 @@
       const date = toISO(row[get('date')?.col]); if (!date) continue;
       const fuel = {};
       for (const f of fuels) fuel[f.fuelType] = (fuel[f.fuelType] || 0) + (Number(row[f.col]) || 0);
-      records.push({ date, distance: Number(row[get('distance')?.col]) || 0, speed: Number(row[get('speed')?.col]) || 0, fuel });
+      const distance = Number(row[get('distance')?.col]) || 0;
+      let speed = get('speed') ? Number(row[get('speed').col]) || 0 : 0;
+      if (!speed && distance > 0) speed = distance / 24;   // 속력 열이 없으면 하루 거리 ÷ 24시간
+      records.push({ date, distance, speed, fuel });
     }
     records.sort((a, b) => a.date.localeCompare(b.date));
     return { mapping: map, records, info: infoAoa ? readInfo(infoAoa.slice(1)) : {} };
