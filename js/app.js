@@ -274,7 +274,9 @@ function renderTab2Ship() {
 
   // 데이터 표
   const fuelTypes = [...new Set(ship.records.flatMap(r => Object.keys(r.fuel || {})))];
-  const showRecords = tab2ShowAll ? ship.records : ship.records.filter((_, i) => suspectRows.has(i));
+  // 최신 보고가 위로 오도록 날짜 내림차순 (원본 순서는 그대로, 화면 표시만 정렬)
+  const showRecords = (tab2ShowAll ? ship.records : ship.records.filter((_, i) => suspectRows.has(i)))
+    .slice().sort((a, b) => b.date.localeCompare(a.date));
 
   if (showRecords.length === 0) {
     cont.innerHTML = `${showBtn}
@@ -320,7 +322,7 @@ function renderTab2Ship() {
     <div class="data-table-wrapper">
       <table class="data-table">
         <thead><tr>
-          <th>날짜</th><th>거리 (nm)</th><th>속력 (kt)</th>
+          <th>날짜 ↓ 최신순</th><th>거리 (nm)</th><th>속력 (kt)</th>
           ${fuelCols}<th>합계 (t)</th>
         </tr></thead>
         <tbody>${rows}</tbody>
