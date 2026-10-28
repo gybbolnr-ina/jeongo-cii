@@ -1,0 +1,6 @@
+[
+  { "file": "A_noon_2026.xlsx", "label": "A호 · 영문 양식 엑셀" },
+  { "file": "B_noon_2026.xlsx", "label": "B호 · 한글 양식 엑셀" },
+  { "file": "C_noon_2026.csv",  "label": "C호 · CSV(선박정보 없음)", "info": { "name": "C호", "type": "벌크선", "dwt": 35000, "planAnnualDistance": 66240 } },
+  { "file": "D_noon_2026.xlsx", "label": "D호 · 약어 양식 엑셀(경유 포함)" }
+]

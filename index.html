@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CII 사전관리 · 정오보고 기반</title>
+  <meta name="description" content="중소선사용 정오보고 기반 CII 사전관리 웹 프로토타입. 엑셀/CSV 정오보고를 업로드하면 올해 CII, 연말 예상 등급, 연료 한도, 권장 속력을 즉시 계산합니다.">
+  <meta name="robots" content="noindex">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- 공모전 데모 배너 -->
+  <div id="demo-banner">
+    🏆 공모전 프로토타입 &middot; 샘플 데이터(가정 선박)로 시연합니다
+  </div>
+
+  <!-- 헤더 & 탭 -->
+  <header id="header">
+    <div id="header-top">
+      <span id="site-title">서비스명(가칭)</span>
+      <span id="site-subtitle">중소선사용 CII 사전관리 · 정오보고 기반</span>
+    </div>
+    <nav id="tabs" role="tablist" aria-label="주요 화면">
+      <button class="tab-btn active" data-tab="tab1" role="tab" aria-selected="true">① 정오보고 수신</button>
+      <button class="tab-btn" data-tab="tab2" role="tab">② 표준화·검증</button>
+      <button class="tab-btn" data-tab="tab3" role="tab">③ 선상 패드</button>
+      <button class="tab-btn" data-tab="tab4" role="tab">④ 선단 대시보드</button>
+      <button class="tab-btn" data-tab="tab5" role="tab">⑤ 항차 미리보기</button>
+      <button class="tab-btn" data-tab="tab6" role="tab">⑥ 보고서</button>
+    </nav>
+  </header>
+
+  <!-- 메인 -->
+  <main id="main">
+
+    <!-- ① 정오보고 수신 -->
+    <section class="tab-panel active" id="tab-tab1" role="tabpanel">
+      <h1 class="section-title">정오보고 수신</h1>
+      <p class="section-desc">선박별 정오보고 파일(.xlsx .xls .csv)을 올리면 항목을 자동으로 표준화합니다.</p>
+
+      <!-- 업로드 영역 -->
+      <div id="drop-zone" role="button" tabindex="0" aria-label="파일 드롭 영역">
+        <div class="drop-icon">📂</div>
+        <div class="drop-text">파일을 여기에 끌어다 놓거나</div>
+        <div class="drop-hint">.xlsx .xls .csv · 여러 파일 동시 가능</div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btn-file">📄 파일 선택</button>
+        <button class="btn" id="btn-load-samples">📂 샘플 4척 불러오기</button>
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" multiple style="display:none">
+      </div>
+
+      <!-- 선박 카드 컨테이너 -->
+      <div id="ship-cards-container">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <p>파일을 업로드하거나 샘플을 불러오세요</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ② 표준화·검증 -->
+    <section class="tab-panel" id="tab-tab2" role="tabpanel">
+      <h1 class="section-title">표준화·검증</h1>
+      <p class="section-desc">의심 값을 노란색으로 표시합니다. 값을 바로 수정하면 모든 화면이 즉시 재계산됩니다.</p>
+      <div id="tab2-content">
+        <div class="empty-state"><div class="empty-icon">⚓</div><p>먼저 탭 ①에서 파일을 업로드하거나 샘플을 불러오세요</p></div>
+      </div>
+    </section>
+
+    <!-- ③ 선상 패드 -->
+    <section class="tab-panel" id="tab-tab3" role="tabpanel">
+      <h1 class="section-title">선상 패드</h1>
+      <p class="section-desc">선장·항해사용 큰 카드 화면. 오늘의 권장 속력과 연료 한도를 즉시 확인하세요.</p>
+      <div id="tab3-content">
+        <div class="empty-state"><div class="empty-icon">⚓</div><p>먼저 탭 ①에서 파일을 업로드하거나 샘플을 불러오세요</p></div>
+      </div>
+    </section>
+
+    <!-- ④ 선단 대시보드 -->
+    <section class="tab-panel" id="tab-tab4" role="tabpanel">
+      <h1 class="section-title">선단 대시보드</h1>
+      <p class="section-desc">해무팀·경영진용. 전 선박 현황과 2026~2030 등급 전망을 한눈에.</p>
+      <div id="tab4-content">
+        <div class="empty-state"><div class="empty-icon">⚓</div><p>먼저 탭 ①에서 파일을 업로드하거나 샘플을 불러오세요</p></div>
+      </div>
+    </section>
+
+    <!-- ⑤ 항차 미리보기 -->
+    <section class="tab-panel" id="tab-tab5" role="tabpanel">
+      <h1 class="section-title">항차 미리보기</h1>
+      <p class="section-desc">영업 담당자용. 이 항차를 받으면 연말 등급이 어떻게 바뀌는지, 최적 속력은 얼마인지 미리 계산합니다.</p>
+      <div id="tab5-content">
+        <div class="empty-state"><div class="empty-icon">⚓</div><p>먼저 탭 ①에서 파일을 업로드하거나 샘플을 불러오세요</p></div>
+      </div>
+    </section>
+
+    <!-- ⑥ 보고서 -->
+    <section class="tab-panel" id="tab-tab6" role="tabpanel">
+      <h1 class="section-title">보고서</h1>
+      <p class="section-desc">환경 담당자용. IMO DCS 보고 자료 초안(데모)을 CSV로 내려받습니다.</p>
+      <div id="tab6-content">
+        <div class="empty-state"><div class="empty-icon">⚓</div><p>먼저 탭 ①에서 파일을 업로드하거나 샘플을 불러오세요</p></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Scripts (순서 중요: config → engine → parser → sample-data → app) -->
+  <script src="js/config.js"></script>
+  <script src="js/cii-engine.js"></script>
+  <script src="js/noon-parser.js"></script>
+  <script src="js/sample-data.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
